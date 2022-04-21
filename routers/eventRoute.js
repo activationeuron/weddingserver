@@ -3,11 +3,9 @@ const eventModel = require('../models/Events');
 const invitationsModel = require('../models/Invitations');
 const Rsvp = require('../models/Rsvp');
 const router = express.Router();
-const client = require('twilio')(
-  'AC748a9db7770f93e819e1ade2c8c67cb9',
-  '0d9c5099b8988535f0e4127893e56598'
-);
-
+const nodemailer = require('nodemailer');
+const path = require('path');
+var hbs = require('nodemailer-express-handlebars');
 router.post('/create', async (req, res) => {
   const reqbody = req.body;
   try {
@@ -96,6 +94,28 @@ router.get('/myevent/:phone', async (req, res) => {
 //   return res.status(200).send({ success: true, data: event });
 // });
 
+const handlebarOptions = {
+  viewEngine: {
+    partialsDir: path.resolve('./views/'),
+    defaultLayout: false,
+  },
+  viewPath: path.resolve('./views/'),
+};
+
+// use a template file with nodemailer
+
+let transporter = nodemailer.createTransport({
+  service: 'Gmail',
+  host: 'smtp.gmail.com',
+  portL: 587,
+  secure: false,
+  auth: {
+    user: 'afaanwedsmariam@gmail.com',
+    pass: 'afaanwedsmariam123!@#',
+  },
+});
+
+transporter.use('compile', hbs(handlebarOptions));
 router.post('/rsvp', async (req, res) => {
   const reqbody = req.body;
   const rsvp = await Rsvp.create(reqbody);
@@ -111,24 +131,55 @@ router.post('/rsvp', async (req, res) => {
         },
       },
     ]);
-    console.log(aggri);
-    aggri[0].data[0].events.map((event) => {
-      var dates = {
-        HALDI: '09-03-2022',
-        SAGNEET: '09-04-2022',
-        WEDDING: '09-08-2022',
-        RECEPTIONS: '09-16-2022',
-      };
-      client.messages
-        .create({
-          body: `Hi,${rsvp.name} invited to ${event}, on ${dates[event]}`,
-          messagingServiceSid: 'MG3083498098b2b195a8a24b0345547fd6',
-          to: rsvp.phone,
-        })
-        .then((message) => console.log(message.sid))
-        .catch((err) => console.log(err));
-    });
 
+    var dates = {
+      HALDI: {
+        name: 'Haldi Ceremony ',
+        link: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=NmFjbjZtZTZmNnJxMm9wb3ZpYWEzYjlrZ3IgYWZhYW53ZWRzbWFyaWFtQG0&tmsrc=afaanwedsmariam%40gmail.com',
+        date: '03rd september 2022',
+        address: '2259 Camino Rey Fullerton CA 92833',
+      },
+      SANGEET: {
+        name: 'Sangeet ceremony',
+        link: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=NHI0a3NuNGhwY2hxNzFlNzQ1ZmgycWwzbzkgYWZhYW53ZWRzbWFyaWFtQG0&tmsrc=afaanwedsmariam%40gmail.com',
+        date: '04th september 2022',
+        address: '',
+      },
+      WEDDING: {
+        name: 'Wedding ceremony',
+        link: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=MHVoYmgxbnNkcjBjMzF1bWozdTkxamppM3MgYWZhYW53ZWRzbWFyaWFtQG0&tmsrc=afaanwedsmariam%40gmail.com',
+        date: '08th september 2022',
+        address: 'Mount Prospect IL',
+      },
+      RECEPTIONS: {
+        name: 'Reception ',
+        link: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=NWU2NmVpa3Q5MG9pcDc2ZGd0Y3BiZWU3cmsgYWZhYW53ZWRzbWFyaWFtQG0&tmsrc=afaanwedsmariam%40gmail.com',
+        date: '16th september 2022',
+        address: 'Villa Contempo Estate',
+      },
+    };
+
+    const invArr = [];
+    aggri[0].data[0].events.map((event) => {
+      console.log(event);
+      const data = dates[event];
+      invArr.push(data);
+    });
+    var mailOptions = {
+      from: 'afaanwedsmariam@gmail.com',
+      to: req.body.email,
+      template: 'email',
+      subject: 'Invitations from afaan and mariam',
+      context: { data: invArr },
+    };
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        return console.log(error);
+      }
+      console.log('Message sent: %s', info.messageId);
+      // Preview only available when sending through an Ethereal account
+      console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+    });
     if (rsvp) {
       return res.status(201).send({ success: true, data: rsvp });
     }
