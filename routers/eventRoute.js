@@ -160,7 +160,7 @@ router.post('/rsvp', async (req, res) => {
     };
 
     const invArr = [];
-    aggri[0].data[0].events.map((event) => {
+    rsvp.events.map((event) => {
       console.log(event);
       const data = dates[event];
       invArr.push(data);

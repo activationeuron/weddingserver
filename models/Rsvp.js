@@ -6,6 +6,7 @@ const rsvpSchema = new mongoose.Schema({
   plus: { type: Boolean },
   email: { type: String },
   plusName: { type: String },
+  events: { type: Object },
 });
 
 const Rsvp = mongoose.model('Rsvp', rsvpSchema);
